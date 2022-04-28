@@ -11,6 +11,7 @@ typedef struct //2D vector x
 	double v;
 } node_t;
 
+
 /*
  * a b
  * c d

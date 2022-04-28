@@ -5,6 +5,7 @@
 #include "C:\Users\ilina\source\repos\Parallel\vtk.h"
 #include "C:\Users\ilina\source\repos\Parallel\common.h"
 #include "C:\Users\ilina\source\repos\Parallel\parallel.h"
+#include "C:\Users\ilina\source\repos\Parallel\blood.h" //выберем пока один для определенности
 
 /*
 
@@ -18,15 +19,15 @@
 
 */
 
-#include "C:\Users\ilina\source\repos\Parallel\brusselator.h" //выберем пока один для определенности
 
-int if_power_of_2(int n) {
+int if_power_of_2(int n) { //функция, проверяющая, является ли поданное на нее число степенью двойки
 	while ((n & 1) == 0)
 		n >>= 1;
 	return (n == 1) ? 1 : 0;
 }
 
-void prl_reduction(matrix_t* Am, matrix_t* Bm, matrix_t* Cm, node_t* Fm, node_t* u1) //судя по всему речь о массивах матриц, триндец
+
+void prl_reduction(matrix_t* Am, matrix_t* Bm, matrix_t* Cm, node_t* Fm, node_t* u1)
 {
 	int s, j;
 	// for each proccesses
@@ -148,10 +149,12 @@ void reduction_method(const node_t* u, node_t* u1)
 	matrix_t* Cm = (matrix_t*)malloc(sizeof(matrix_t) * (N + 1));
 	node_t* Fm = (node_t*)malloc(sizeof(node_t) * (N + 1));
 
+//А нужна ли вообще 
 	if ((u == NULL) || (u1 == NULL)) {
 		fprintf(stderr, "Invalid arguments for reduction_method\n");
 		exit(-1);
 	}
+//
 
 	if ((Am == NULL) || (Bm == NULL) || (Cm == NULL) || (Fm == NULL)) {
 		fprintf(stderr, "Cannot alloc enough memory\n");
@@ -193,32 +196,33 @@ void reduction_method(const node_t* u, node_t* u1)
 
 int main(int argc, char** argv)
 {
-	node_t* u, * u1;
+	node_t* u, * u1; //u - это u без крышечки, то есть в старый момент времени, u1 - это u с крышечкой, то есть в новый момент времени
 	node_t* temp;
 	int i;
 	char buf[256];
 	const char* save[2] = { "u", "v" };
 
-	u = (node_t*)malloc(sizeof(node_t) * (N + 1));
+	u = (node_t*)malloc(sizeof(node_t) * (N + 1)); //выделяем память под вектора скорости в старый и новый момент времени
 	u1 = (node_t*)malloc(sizeof(node_t) * (N + 1));
+
 	if ((u == NULL) || (u1 == NULL)) {
 		fprintf(stderr, "Cannot alloc enough memory\n");
 		exit(-1);
 	}
 
 	if (!if_power_of_2(N)) {
-		fprintf(stderr, "Parameter N must be 2^k\n");
+		fprintf(stderr, "Parameter N must be 2^k\n"); //N - количество делений отрезка. h - ширина шага
 		exit(-1);
 	}
 
-	init(u);
+	init(u); //задаем начальные условия (см. brusselator.h)
 	init(u1);
 
-	for (i = 0; i < S; i++) {
-		/* Сохраняем посчитанные значения. */
+	for (i = 0; i < S; i++) { //всего шагов S = 50 000
+		/* Каждые сто шагов сохраняем посчитанные значения. */
 		if (i % 100 == 0) {
-			sprintf(buf, "res/data_%06d.vtk", i);
-			write_to_vtk2((double*)u, buf, save, N, 0.0, h, 2);
+			sprintf(buf, "C:/Users/ilina/source/repos/Parallel/res/data_%06d.vtk", i); //%06d: "6" - мин.длина записи = 6. "0" - если мин.длина меньше 6, число дополнится слева нулями. Н-р для i = 100 получим "res/data_000100.vtk"
+			write_to_vtk2((double*)u, buf, save, N, 0.0, h, 2); //записываем все это в файл
 		}
 
 		/* Обновляем значение. */
