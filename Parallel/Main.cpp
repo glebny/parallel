@@ -26,7 +26,6 @@ int if_power_of_2(int n) { //функция, проверяющая, является ли поданное на нее ч
 	return (n == 1) ? 1 : 0;
 }
 
-
 void prl_reduction(matrix_t* Am, matrix_t* Bm, matrix_t* Cm, node_t* Fm, node_t* u1)
 {
 	int s, j;
@@ -117,8 +116,10 @@ void reduction(matrix_t* Am, matrix_t* Bm, matrix_t* Cm, node_t* Fm, node_t* u1)
 	 * u0 = [B0 - C0 (BN \ AN)] \ [d0 - C0 (BN \ dN)]
 	 * uN = [BN - AN (B0 \ C0)] \ [dN - AN (B0 \ d0)]
 	 */
+
 	node_t r0 = { .u = Fm[0].u, .v = Fm[0].v };
 	node_t rN = { .u = Fm[N].u, .v = Fm[N].v };
+
 	matrix_t Ax = mmmul(mscale(Am[N], -1), minv(Bm[0]));
 	matrix_t Cx = mmmul(mscale(Cm[0], -1), minv(Bm[N]));
 	r0 = vadd(r0, 1.0, mvmul(Cx, Fm[N]), 1.0);
@@ -149,7 +150,7 @@ void reduction_method(const node_t* u, node_t* u1)
 	matrix_t* Cm = (matrix_t*)malloc(sizeof(matrix_t) * (N + 1));
 	node_t* Fm = (node_t*)malloc(sizeof(node_t) * (N + 1));
 
-//А нужна ли вообще 
+//А нужна ли вообще эта проверка, если мы только что ее делали?
 	if ((u == NULL) || (u1 == NULL)) {
 		fprintf(stderr, "Invalid arguments for reduction_method\n");
 		exit(-1);
@@ -162,17 +163,41 @@ void reduction_method(const node_t* u, node_t* u1)
 	}
 
 	/* Постоянные матрицы. */
-	for (i = 1; i < N; i++) {
-		Am[i] = (matrix_t){ .a11 = dt * d / h / h, .a12 = 0.0, .a21 = 0.0, .a22 = dt * D / h / h };
-		Bm[i] = (matrix_t){ .a11 = -1.0 - 2.0 * dt * d / h / h + dt * dfdu(u[i]),
-					.a12 = dt * dfdv(u[i]),
-					.a21 = dt * dgdu(u[i]),
-					.a22 = -1.0 - 2.0 * dt * D / h / h + dt * dgdv(u[i]) };
-		Cm[i] = (matrix_t){ .a11 = dt * d / h / h, .a12 = 0.0, .a21 = 0.0, .a22 = dt * D / h / h };
-		Fm[i] = (node_t){ .u = -u[i].u - dt * f(u[i]) +
-					dt * dfdu(u[i]) * u[i].u + dt * dfdv(u[i]) * u[i].v,
-				  .v = -u[i].v - dt * g(u[i]) +
-					dt * dgdu(u[i]) * u[i].u + dt * dgdv(u[i]) * u[i].v };
+	for (i = 1; i < N; i++)
+	{
+		Am[i] = (matrix_t)
+		{ 
+			                .a11 = dt * d / h / h,   .a12 = 0.0,
+
+			                .a21 = 0.0,			     .a22 = dt * D / h / h
+		};
+		//все элементы этой матрицы имеют обратный знак по сравнению с тем, что написано в методичке. Чем это объясняется? На ошибку не похоже.
+
+
+		Bm[i] = (matrix_t)
+		{
+			                .a11 = -1.0 - 2.0 * dt * d / h / h + dt * dfdu(u[i]),    .a12 = dt * dfdv(u[i]),
+
+					        .a21 = dt * dgdu(u[i]),                                  .a22 = -1.0 - 2.0 * dt * D / h / h + dt * dgdv(u[i])
+		};
+		//тут тоже знаки обратные
+
+
+		Cm[i] = (matrix_t)
+		{ 
+			                .a11 = dt * d / h / h,   .a12 = 0.0,
+
+			                .a21 = 0.0,              .a22 = dt * D / h / h
+		};
+		//и здесь минусов не хватает
+
+
+		Fm[i] = (node_t)
+		{
+			        .u = -u[i].u - dt * f(u[i]) + dt * dfdu(u[i]) * u[i].u + dt * dfdv(u[i]) * u[i].v,
+				    .v = -u[i].v - dt * g(u[i]) + dt * dgdu(u[i]) * u[i].u + dt * dgdv(u[i]) * u[i].v
+		};
+		//тут вообще как-то все не совсем так, как надо. h^2, на которое мы делим часть этого выражения, тут, например, вообще нет.
 	}
 
 	/* Граничные условия. */
