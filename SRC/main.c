@@ -1,10 +1,14 @@
+#include "reduction.h"
 #include <time.h>
 #include "vtk.h"
-#include "reduction.h"
+#include "cursedpart.h"
 
 int main(int argc, char** argv)
 {
-    //
+    welcome();
+
+    int sizeInput, sizeN, size;
+
     int count = 0;
     bool flag;
     sizeInput = N;
@@ -36,10 +40,8 @@ int main(int argc, char** argv)
     int index1, index2, offset;
     double alpha, gamma;
 
-    //
     node_t* u, * u1;
     node_t* temp;
-    //int i;
     char buf[256];
     const char* save[2] = { "u", "v" };
 
@@ -54,16 +56,18 @@ int main(int argc, char** argv)
     init(u1, sizeInput, size);
 
     for (i = 0; i < 10; i++) { //10
-        /* Сохраняем посчитанные значения. */
+
+        /* Saving calculated values */
         if (i % 2 == 0) {
-            sprintf(buf, "C:/Users/Gleb/Desktop/lobanov/S_reaction_diffusion_matrix/src/res1/data_%06d.vtk", i);
+            sprintf(buf, "C:/Users/ilina/source/repos/SRC/results/data_%06d.vtk", i);
+            //sprintf(buf, "C:/Users/Gleb/Desktop/lobanov/S_reaction_diffusion_matrix/src/res1/data_%06d.vtk", i);
             write_to_vtk2((double*)u, buf, save, N, 0.0, h, 2);
         }
 
-        /* Обновляем значение. */
+        /* Refreshing the value */
         reduction_method(u, u1, sizeInput, flag, size);
 
-        /* Меняем местами временной слой. */
+        /* Swapping time layer */
         temp = u;
         u = u1;
         u1 = temp;
@@ -74,6 +78,6 @@ int main(int argc, char** argv)
     clock_t end = clock();
     double elapsed = (double)(end - start) / CLOCKS_PER_SEC;
 
-    printf("Time measured: %.3f seconds.\n", elapsed);
+    printWorkTime(elapsed);
     return 0;
 }
